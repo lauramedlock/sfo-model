@@ -1,4 +1,5 @@
 %% Model of Bursting SFO Neurons (for paper)
+% with IKS instead of IKCa
 clear
 
 %% Single Recording Trace:
@@ -7,7 +8,7 @@ dt = 0.01; % Step Size
 t=0; % Start time (ms)
 tfinal = 60000; % End time (ms)
 Tstep =(0:dt:tfinal); % Time Array in ms
- 
+
 %% Initial Values:
 V=-60;       % Membrane Potential (mV)
 nA=0;        % IK Activation
@@ -16,11 +17,11 @@ kA=0;        % INa Inactivation
 mNaP=0;      % INaP Activation
 hNaP=0;      % INaP Inactivation
 mNCa=0;      % N-type Calcium
-mA=0.32;     % Slow K+ Current Activation  
+mA=0.32;     % Slow K+ Current Activation
 hA=0;        % Slow K+ Current Inactivation
 mKA=0;       % A-type Potassium
 hKA=0;       % A-type Potassium
- 
+
 %% Passive Cell Properties
 % Cell Morphology:
 CellSize = 10;                       % Diameter of Model Cell in microns
@@ -37,7 +38,7 @@ Er = -65;                   % Reversal Potential of Leak to dictate RMP
 % Proper Cell Size for measurement conversion
 SizeCM = CellSize/10000;                      % cell diameter in cm
 CellAreaReal = 4*pi*((SizeCM/2).^2);          % Area of Cell with Spherical Shape (cm^2)
- 
+
 %% Active Cell Properties
 % Reversal Potentials (mV) from Lab:
 ENa = 107;
@@ -72,12 +73,12 @@ INAPP=zeros(1,length(Tstep));
 tidx=0;
 for z=Tstep
     tidx=tidx+1;
-    
+
 %% Injected Current in uA/cm^2 (1 pA = 0.3183 uA/cm^2 & 10 pA = 3.18 uA/cm^2);
 if (z>=10000) && (z<10050)
-        I = 0;               
+        I = 0;
 else
-        I = 0;         
+        I = 0;
 end
 
 %% Time Constants (in ms):
@@ -88,44 +89,44 @@ tau_sA = 0.1;           % Time Constant for m gate (Sodium Act.)
 tau_kA = 1;             % Time Constant for h gate (Sodium Inact.)
 tau_mNaP = 5;           % Time Constant for m gate (Persistent Na+)
 tau_hNaP = 50;          % Time Constant for h gate (Persistent Na+)
-tau_mNCa = 10;          % Time Constant for m gate (N-type Calcium) 
+tau_mNCa = 10;          % Time Constant for m gate (N-type Calcium)
 tau_mKA = 5;            % Time Constant for m gate (A-type Potassium) Liu
 tau_hKA = 30;           % Time Constant for m gate (A-type Potassium) Liu
 
 %% Current Equations:
 % Potassium Currents:
-    % Potassium Channel (IK):      
-    nA0=1/(1+exp((V-2)/-8));         
+    % Potassium Channel (IK):
+    nA0=1/(1+exp((V-2)/-8));
     nA = nA + dt*((nA0-nA)/tau_nA);
     IK = gK*nA^4*(V-EK);
     % Transient Potassium Current (IA):
-    mKA0 = 1/(1+exp((V+44)/-18));         
+    mKA0 = 1/(1+exp((V+44)/-18));
     mKA = mKA + dt*((mKA0-mKA)/tau_mKA);
-    hKA0 = 1/(1+exp((V+60)/8));  
+    hKA0 = 1/(1+exp((V+60)/8));
     hKA = hKA + dt*((hKA0-hKA)/tau_hKA);
     IA = gA*mKA^3*hKA*(V-EK);
-    % Slow K+ Current (IKS):  
-    mA0 = 1/(1+exp((V+44)/-18));         
+    % Slow K+ Current (IKS):
+    mA0 = 1/(1+exp((V+44)/-18));
     mA = mA + dt*((mA0-mA)/tau_mA);
-    hA0 = 1/(1+exp((V+60)/8));  
+    hA0 = 1/(1+exp((V+60)/8));
     hA = hA + dt*((hA0-hA)/tau_hA);
-    IKS = gKS*mA^3*hA*(V-EK);   
+    IKS = gKS*mA^3*hA*(V-EK);
 % Sodium Currents:
-    % Sodium Channel (INa):               
-    sA0 = 1/(1+exp((V+31)/-6.11));  
+    % Sodium Channel (INa):
+    sA0 = 1/(1+exp((V+31)/-6.11));
     sA = sA + dt*((sA0-sA)/tau_sA);
     kA0 = 1/(1+exp((V+62)/6.15));
     kA = kA + dt*((kA0-kA)/tau_kA);
     INa = gNa*sA^3*kA*(V-ENa);
-    % Persisent Na+ Current (INaP):  
-    mNaP0 = 1/(1+exp((V+55)/-4));       
-    mNaP = mNaP + dt*((mNaP0-mNaP)/tau_mNaP);  
-    hNaP0 =1/(1+exp((V+45)/6.1));           
+    % Persisent Na+ Current (INaP):
+    mNaP0 = 1/(1+exp((V+55)/-4));
+    mNaP = mNaP + dt*((mNaP0-mNaP)/tau_mNaP);
+    hNaP0 =1/(1+exp((V+45)/6.1));
     hNaP = hNaP + dt*((hNaP0-hNaP)/tau_hNaP);
-    INaP = gNaP*mNaP^3*hNaP*(V-ENa);  
+    INaP = gNaP*mNaP^3*hNaP*(V-ENa);
 % Calcium Currents:
     % N-Type Calcium Current
-    mNCa0 = 1/(1+exp((V+14)/-5.8));             
+    mNCa0 = 1/(1+exp((V+14)/-5.8));
     mNCa = mNCa + dt*((mNCa0-mNCa)/tau_mNCa);
     ICa = gNCa*mNCa^2*(V-ECa);
 % Leakage Currents:
@@ -137,11 +138,11 @@ tau_hKA = 30;           % Time Constant for m gate (A-type Potassium) Liu
     IN = stdnoise*randn;
 % Calcium Changes:
 %   CaI = CaI + dt*((-alpha*ICa)-((CaI-CaR)/tau_CaI));
- 
-%% Voltage Eqn: 
+
+%% Voltage Eqn:
     V = V + ((dt/C)*(I + IN - IL - IA - IK - INSCC - ICa - IKS - INaP - INa));
 
-    
+
 % Convert Current to nA
     IKAPP = (IK) * CellAreaReal;
     IKreal = IKAPP*1000;
@@ -150,8 +151,8 @@ tau_hKA = 30;           % Time Constant for m gate (A-type Potassium) Liu
     IKSSS = (IKS) * CellAreaReal;
     IKSreal = IKSSS*1000;
     INAA = (INa+INaP)*CellAreaReal;               % INa in uA
-    INAreal = INAA*1000;                          % INa in nA    
-    
+    INAreal = INAA*1000;                          % INa in nA
+
 
 %% Vector of Values:
     Vm(tidx)= V;
@@ -177,7 +178,7 @@ else
 end
 
 if FF(pp)==1
-times(pp)=nn; 
+times(pp)=nn;
 else
 times(pp)=0;
 end
@@ -186,7 +187,7 @@ end
 % If vector is all 0's CV =0:
 if FF(:,:) == 0
    CV = 0;
-else  
+else
 % Calculate ISI Times:
 L = times(times~=0);                % Vector of all the spike times
 LL = zeros(1,length(L));
@@ -205,7 +206,7 @@ if LL(tidr) <= 1       % If ISI is less than 1 (two points on the same spike -- 
 else
     L(tidr) = L(tidr);
 end
-    
+
 woohoo = L(L~=0);     % Woohoo is the proper spike times (excluding any double points from the same AP).
 end
 
@@ -218,10 +219,10 @@ n0=1;
 tidt=0;
 for p=time
     tidt=tidt+1;
-    
+
     ISI=woohoo(n0+1)-woohoo(n0);
     n0=n0+1;
-    
+
     ISIT(tidt)=ISI;
     N(tidt)=n0;
 end
@@ -245,8 +246,8 @@ hhh=0;
 hfh=0;
 for pvect = 1:length(Tstep)
    hhh = hhh+1;
-    
-if pvect == sptimes(hfh+1)   
+
+if pvect == sptimes(hfh+1)
    SPIKEPLACE(hhh)=1;         % SPIKEPLACE contains a 1 when there is a spike
    hfh = hfh+1;
 else
@@ -256,25 +257,25 @@ end
 end
 
 % Calculate FF in Hz (how many spikes/second)
-seg = 100000;    % Every 1s 
+seg = 100000;    % Every 1s
 tiff = 100000;
 tif = 1;
 tifd = 0;
 for tt = 1:seg:length(Tstep)
-    tifd = tifd+1;   
+    tifd = tifd+1;
     firefreq = sum(SPIKEPLACE(tif:tiff));  % Sum the array vector every 1s
     tif = tif+seg;
     tiff = tiff+seg;
     FiringFreq(tifd)=firefreq;  % Firing frequency of the neuron every 1 second (if 60s recording, 60 FF points)
-    
+
     if tif == length(Tstep)
-    break    
+    break
     end
 end
 
 MeanFiringFrequency = mean(FiringFreq);   % Mean FF over entire trace.
 
-%% Membrane Potential Graph: 
+%% Membrane Potential Graph:
 figure
 sh(1)=subplot(1,1,1);
 plot(TIME,NEWNEW,'k-')
@@ -283,4 +284,3 @@ ylabel('Membrane Potential (mV)')
 CVV = num2str(CV);
 FFF = num2str(MeanFiringFrequency);
 title(['CV = ',CVV,' & Mean FF = ',FFF])
-
