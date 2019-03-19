@@ -1,4 +1,5 @@
 # sfo-model
 SFO neuron model from MSc
 
-I want to add my published paper code here.
+As published in JNeurophysiology and extra code
+for other SFO neuron features.
