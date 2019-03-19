@@ -1,0 +1,134 @@
+%% Gaussian SVM Classifier
+% This is my final ANG classifier with proper PCA application and KFold (5)
+% done manually.
+clear
+% Estimates the accuracy of the classifier in each fold.
+% Create many SVMS with this code and average the accuracy of each one to
+% estimate the accuracy of the model
+
+load('ANGRawData.mat');
+
+
+for z = 1
+% Initialize my predictors and their responses:
+responses = ANGRawData.ResponsetoANGII;
+predictorNames = {'GlucoseinmM', 'APSizemV', 'CapacitancepF', 'SeriesResistanceM', 'RMPmV', 'Baseline100sbeforeANG', 'BaselineSTD', 'FFofBaselineSs', 'TotalKnA', 'PeakIKnA', 'PeakIAnA', 'IAIKratio', 'PeakNanA', 'IKTotINaRatio', 'NaActivationThreshold', 'AHPSizebeginning', 'CellType'};
+predictions = ANGRawData(:,predictorNames);
+
+% Create new vectors for storing scores and labels
+validationPredictions = responses;
+numObservations = size(predictions, 1);
+numClasses = 2;
+validationScores = NaN(numObservations, numClasses);
+PostProbs = validationScores;
+
+% Cross Validation with k-folds for small data sets:
+folds = 5;
+c = cvpartition(responses,'KFold',5);
+
+
+for y = 1:folds
+    % Split into Training Data (40/50) and Testing Data (10/50):
+    TrainingPrediction = predictions(c.training(y), :);
+    TrainingResponse = responses(c.training(y), :);
+    ghost = table2array(TrainingPrediction);
+    
+    % Perform PCA for training predictors
+    [PCAcoeff,PCAscore,~,~,explained,PCAmean] = pca(ghost,'Centered',true);
+    % Keep 95% of variance
+    variancetoexplain = 0.95;   % Only keep the components that explained 95% of the variance (tested a few of these and 95% = highest accuracy)
+    keepcomponents = find(cumsum(explained)/sum(explained) >= variancetoexplain, 1);
+    tCoeff = PCAcoeff(:,1:keepcomponents);                            % Keep the PCA coeff from the 7 components we want
+    PredictorsAfterPCA = array2table(PCAscore(:,1:keepcomponents));   % Keep the scores from the 7 components we want
+    
+    % Train classifier based on PCA Transformed Training Data Set (40/50 neurons):
+    CVANGClassifier = fitcsvm(PredictorsAfterPCA,TrainingResponse,...
+        'KernelFunction','rbf',...
+        'KernelScale','auto',...       
+        'BoxConstraint',1,...
+        'Standardize',true,...
+        'ClassNames', {'No Response','Depolarization'});
+    % My positive class is Depolarizations.
+    
+    % Training Data Done!
+    
+    % Transform the Test Data (10 neurons) using PCA info:
+    TestingPrediction = predictions(c.test(y), :);           % This is the raw seperate Test data before its transformed by PCA
+    ArrayTestPrediction = table2array(TestingPrediction);    % To apply the PCA transformations turn it into an array.
+    % Create the cell of responses for the 10 testing points:
+    TestingResponse = responses(c.test(y), :);
+    % Applying the same PCA Transformation to your partitioned Test Data (10/50 neurons).
+    XXX = bsxfun(@minus,ArrayTestPrediction,PCAmean) ;    % Subtract the PCA mean from every row of the associated column in ArrayTestPrediction.
+    Var = XXX * tCoeff;                                   % Take new matrix adjusted on PCA mean and multiply it by PCA coefficients (that explain 95% of var.).
+    
+    % This gives you your Test Data (10/50 neurons) in the proper 10x7
+    % dimension so you can use it to make and evaluate a prediction.
+    
+    % This is the final table you use to test the classifier on: X is your
+    % Test Data and you will have 5 of them, 1 for each fold.
+    X = array2table(Var);
+    
+    % Use the Classifier made to predict the label of this new Test Data.
+    % This will give you it's predicted label (label) and score (score).
+    [label,score]=predict(CVANGClassifier,X);
+    
+    % Calculate the posterior probability of this classifier based on the
+    % testing data (uses an appropriate score-to-posterior probability transformation: uses a signmoidal function for inseperable classes):
+%     ScoreCVSVMModel = fitSVMPosterior(CVANGClassifier);
+%     [~,OOSPostProbs] = predict(ScoreCVSVMModel,X);
+    
+    % Store predictions and scores in the original order
+    validationPredictions(c.test(y), :) = label;
+%     validationScores(c.test(y), :) = score;
+%     PostProbs(c.test(y),:) = OOSPostProbs;
+    
+end
+
+% %% Create the confusion matrix for this classifier:
+% % Logical of responses where No response is 1,0 and depol is 0,1:
+% F = [false false false false false false false false false false false false false false false false false false false false false false false false true true true true true true true true true true true true true true true true true true true true true true true true true true ]';
+% FF = double(F);
+% for x = 1:length(FF)
+% if FF(x,1) == 1
+%    FF(x,2) = 0;
+% else
+%    FF(x,2) = 1;
+% end
+% end
+% FFF=FF';
+% 
+% % Predicted response to binary double:
+% JJ = ismember(validationPredictions(:,1),'Depolarization');
+% DD = double(JJ);
+% for k = 1:length(DD)
+% if DD(k,1) == 1
+%    DD(k,2) = 0;
+% else
+%    DD(k,2) = 1;
+% end
+% end
+% DDD=DD';
+% 
+% % Plot the confusion matrix:
+% figure
+% plotconfusion(FFF,DDD)
+% 
+% %% Creating an ROC curve:
+% PostProbs(:,1)=[];
+% [Xsvm,Ysvm,Tsvm,AUCsvm] = perfcurve(responses,PostProbs,'Depolarization');
+% figure
+% plot(Xsvm,Ysvm)
+% legend('Gaussian Kernel','Linear Kernel','Quadratic','Cubic','Location','Best')
+% xlabel('False positive rate'); ylabel('True positive rate');
+% title('ROC Curves for Different SVM Kernels')
+
+%% Calculate the accuracy:
+correctPredictions = strcmp(validationPredictions, responses);
+validationAccuracy = sum(correctPredictions)/length(correctPredictions);
+% Store this validation accuracy
+VALACC(z) = validationAccuracy;
+ 
+end
+
+%% After running my model x times, what was the Average Accuracy % for those runs:
+TotalAccuracy = mean(VALACC) * 100
