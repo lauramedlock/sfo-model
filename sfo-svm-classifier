@@ -1,13 +1,12 @@
 %% Gaussian SVM Classifier
-% This is my final ANG classifier with proper PCA application and KFold (5)
-% done manually.
+% Written in MATLAB
+% Final ANG classifier with proper PCA application and KFold (5) done manually.
 clear
+
 % Estimates the accuracy of the classifier in each fold.
-% Create many SVMS with this code and average the accuracy of each one to
-% estimate the accuracy of the model
+% Create various SVMs with this code and averages the accuracy of each one to estimate the accuracy of the model
 
-load('ANGRawData.mat');
-
+load('ANGRawData.mat'); % load in raw data
 
 for z = 1
 % Initialize my predictors and their responses:
