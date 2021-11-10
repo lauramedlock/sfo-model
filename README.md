@@ -1,5 +1,6 @@
 # SFO Neuron Model
 Tonic and burst firing SFO model as published in JNeurophysiology:
+
 Medlock L, Shute L, Fry M, Standage D, Ferguson AV. Ionic mechanisms underlying tonic and burst firing behavior in subfornical organ neurons: a combined experimental and modeling study. J Neurophysiol. 2018 Nov 1;120(5):2269-2281.
 
 ## Extra Code:
