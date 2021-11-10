@@ -1,4 +1,4 @@
-%% Model of Bursting SFO Neurons (for paper)
+%% Model of Bursting SFO Neurons
 % with IKS instead of IKCa
 clear
 
