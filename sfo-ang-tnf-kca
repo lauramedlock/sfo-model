@@ -1,4 +1,4 @@
-%% Ang II + TNF Model with real KCa and Ca dynamics:
+%% Ang II + TNF Model with KCa and Ca2+ dynamics:
 % Replacing the IKS with IKCa and changing internal Calcium dynamics. Calcium enters
 % the cell during spiking via N-type Ca2+ channels (tied to ICa).
 clear
